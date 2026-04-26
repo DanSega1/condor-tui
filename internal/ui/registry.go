@@ -198,15 +198,8 @@ func riskBadge(level string) string {
 	case "high":
 		return styleBadgeFailed.Render("high")
 	case "critical":
-		return lipglossRender(colorRed, true, "critical")
+		return styleBadgeFailed.Render("critical")
 	default:
 		return styleDimmed.Render(level)
 	}
-}
-
-// lipglossRender is a small helper to avoid importing lipgloss directly.
-func lipglossRender(color interface{}, bold bool, text string) string {
-	s := styleBadgeFailed
-	_ = s
-	return styleBadgeFailed.Render(text)
 }

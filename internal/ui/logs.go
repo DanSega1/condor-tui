@@ -132,7 +132,7 @@ func (m *logsModel) applyFilter() {
 	if q == "" {
 		m.filtered = m.lines
 	} else {
-		m.filtered = m.filtered[:0]
+		m.filtered = m.filtered[:0:0]
 		for _, l := range m.lines {
 			if strings.Contains(strings.ToLower(l.Text), q) {
 				m.filtered = append(m.filtered, l)
