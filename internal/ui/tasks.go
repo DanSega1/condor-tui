@@ -63,6 +63,18 @@ func (m tasksModel) Update(msg tea.Msg) (tasksModel, tea.Cmd) {
 			if m.showDetail {
 				m.detail.SetContent(m.renderDetail())
 			}
+		case "g":
+			m.cursor = 0
+			if m.showDetail {
+				m.detail.SetContent(m.renderDetail())
+			}
+		case "G":
+			if len(m.records) > 0 {
+				m.cursor = len(m.records) - 1
+			}
+			if m.showDetail {
+				m.detail.SetContent(m.renderDetail())
+			}
 		case "enter", " ":
 			m.showDetail = !m.showDetail
 			if m.showDetail {
@@ -70,6 +82,17 @@ func (m tasksModel) Update(msg tea.Msg) (tasksModel, tea.Cmd) {
 			}
 		case "esc":
 			m.showDetail = false
+		}
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case tea.MouseButtonWheelDown:
+			if m.cursor < len(m.records)-1 {
+				m.cursor++
+			}
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -143,7 +166,11 @@ func (m tasksModel) View() string {
 
 	for i := start; i < end; i++ {
 		r := m.records[i]
-		name := truncate(r.Name, colName)
+		displayName := r.Name
+		if displayName == "" {
+			displayName = r.TaskID
+		}
+		name := truncate(displayName, colName)
 		cap_ := truncate(r.Capability, colCap)
 		updated := r.UpdatedAt.Format("15:04:05")
 

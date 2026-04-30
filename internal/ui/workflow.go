@@ -68,6 +68,18 @@ func (m workflowModel) Update(msg tea.Msg) (workflowModel, tea.Cmd) {
 			if m.showDetail {
 				m.detail.SetContent(m.renderDetail())
 			}
+		case "g":
+			m.cursor = 0
+			if m.showDetail {
+				m.detail.SetContent(m.renderDetail())
+			}
+		case "G":
+			if len(m.workflows) > 0 {
+				m.cursor = len(m.workflows) - 1
+			}
+			if m.showDetail {
+				m.detail.SetContent(m.renderDetail())
+			}
 		case "enter", " ":
 			m.showDetail = !m.showDetail
 			if m.showDetail {
@@ -75,6 +87,17 @@ func (m workflowModel) Update(msg tea.Msg) (workflowModel, tea.Cmd) {
 			}
 		case "esc":
 			m.showDetail = false
+		}
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case tea.MouseButtonWheelDown:
+			if m.cursor < len(m.workflows)-1 {
+				m.cursor++
+			}
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width

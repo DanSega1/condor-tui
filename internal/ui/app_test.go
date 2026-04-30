@@ -1,12 +1,15 @@
 package ui_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/DanSega1/condor-tui/internal/client"
+	"github.com/DanSega1/condor-tui/internal/config"
+	"github.com/DanSega1/condor-tui/internal/sysinfo"
 	"github.com/DanSega1/condor-tui/internal/ui"
 )
 
@@ -129,5 +132,131 @@ func TestApp_CapabilitiesLoadedMsg(t *testing.T) {
 	view := result.(tea.Model).View()
 	if view == "" {
 		t.Error("View empty on registry tab")
+	}
+}
+
+// ── header tests ──────────────────────────────────────────────────────────────
+
+func TestRenderHeader_ContainsLogoOnWideTerminal(t *testing.T) {
+	cfg := ui.AppConfig{StorePath: ".conductor/tasks.json"}
+	out := ui.RenderHeader(160, cfg, sysinfo.Stats{})
+	// The header must be non-empty and contain some ASCII art underscores.
+	if out == "" {
+		t.Error("renderHeader returned empty string at 160 cols wide")
+	}
+	if !strings.Contains(out, "__") {
+		t.Error("header should contain ASCII art (underscores) at 160 cols wide")
+	}
+}
+
+func TestRenderHeader_NarrowTerminalNoLogo(t *testing.T) {
+	cfg := ui.AppConfig{StorePath: ".conductor/tasks.json"}
+	// At 10 cols, logo won't fit; header should still return a non-empty string.
+	out := ui.RenderHeader(10, cfg, sysinfo.Stats{})
+	if out == "" {
+		t.Error("renderHeader should not return empty string on narrow terminal")
+	}
+}
+
+func TestRenderHeader_ShowsStatsWhenEnabled(t *testing.T) {
+	cfg := ui.AppConfig{
+		StorePath: ".conductor/tasks.json",
+		Stats:     config.StatsConfig{CPU: true, Memory: false, Network: false},
+	}
+	stats := sysinfo.Stats{CPU: "12%", Memory: "–", NetUp: "↑0B", NetDn: "↓0B"}
+	out := ui.RenderHeader(120, cfg, stats)
+	if !strings.Contains(out, "12%") {
+		t.Error("header should show CPU value when stats.CPU is enabled")
+	}
+}
+
+func TestRenderHeader_HidesStatsWhenDisabled(t *testing.T) {
+	cfg := ui.AppConfig{
+		StorePath: ".conductor/tasks.json",
+		Stats:     config.StatsConfig{CPU: false, Memory: false, Network: false},
+	}
+	stats := sysinfo.Stats{CPU: "99%"}
+	out := ui.RenderHeader(120, cfg, stats)
+	if strings.Contains(out, "99%") {
+		t.Error("header should NOT show CPU value when stats are disabled")
+	}
+}
+
+// ── cmdpalette tests ──────────────────────────────────────────────────────────
+
+func TestExecCmd_ValidCommand(t *testing.T) {
+	result, cmd := ui.ExecCmd("theme dracula")
+	if result.Err {
+		t.Errorf("expected valid command, got error: %s", result.Msg)
+	}
+	if cmd != "theme dracula" {
+		t.Errorf("expected cmd=%q, got %q", "theme dracula", cmd)
+	}
+}
+
+func TestExecCmd_UnknownCommand(t *testing.T) {
+	result, cmd := ui.ExecCmd("blorp something")
+	if !result.Err {
+		t.Error("expected error for unknown command")
+	}
+	if cmd != "" {
+		t.Errorf("unknown command should return empty lastCmd, got %q", cmd)
+	}
+}
+
+func TestExecCmd_EmptyInput(t *testing.T) {
+	result, cmd := ui.ExecCmd("")
+	if result.Err {
+		t.Error("empty input should not produce an error")
+	}
+	if cmd != "" {
+		t.Errorf("empty input should return empty cmd, got %q", cmd)
+	}
+}
+
+func TestExecCmd_AllKnownCommands(t *testing.T) {
+	known := []string{"theme", "store", "refresh", "stats", "open", "quit", "help"}
+	for _, k := range known {
+		result, _ := ui.ExecCmd(k)
+		if result.Err {
+			t.Errorf("command %q should be recognised, got error: %s", k, result.Msg)
+		}
+	}
+}
+
+// ── left/right tab navigation ─────────────────────────────────────────────────
+
+func TestApp_LeftRightTabNav(t *testing.T) {
+	app := newTestApp()
+	app.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+
+	tests := []struct {
+		msg tea.Msg
+		key string
+	}{
+		{tea.KeyMsg{Type: tea.KeyRight}, "right arrow"},
+		{tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("l")}, "l"},
+		{tea.KeyMsg{Type: tea.KeyLeft}, "left arrow"},
+		{tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("h")}, "h"},
+	}
+	for _, tt := range tests {
+		m, _ := app.Update(tt.msg)
+		if m.(tea.Model).View() == "" {
+			t.Errorf("View empty after %q navigation key", tt.key)
+		}
+	}
+}
+
+// ── stats init ────────────────────────────────────────────────────────────────
+
+func TestApp_InitWithStats_returnsCmd(t *testing.T) {
+	app := ui.New(ui.AppConfig{
+		StorePath:   "/tmp/no-such/tasks.json",
+		RefreshRate: time.Hour,
+		Stats:       config.StatsConfig{CPU: true, Memory: true},
+	})
+	cmd := app.Init()
+	if cmd == nil {
+		t.Error("Init with stats enabled should return a non-nil Cmd")
 	}
 }
