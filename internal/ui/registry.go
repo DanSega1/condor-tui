@@ -59,6 +59,18 @@ func (m registryModel) Update(msg tea.Msg) (registryModel, tea.Cmd) {
 			if m.showDetail {
 				m.detail.SetContent(m.renderDetail())
 			}
+		case "g":
+			m.cursor = 0
+			if m.showDetail {
+				m.detail.SetContent(m.renderDetail())
+			}
+		case "G":
+			if len(m.entries) > 0 {
+				m.cursor = len(m.entries) - 1
+			}
+			if m.showDetail {
+				m.detail.SetContent(m.renderDetail())
+			}
 		case "enter", " ":
 			m.showDetail = !m.showDetail
 			if m.showDetail {
@@ -66,6 +78,17 @@ func (m registryModel) Update(msg tea.Msg) (registryModel, tea.Cmd) {
 			}
 		case "esc":
 			m.showDetail = false
+		}
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			if m.cursor > 0 {
+				m.cursor--
+			}
+		case tea.MouseButtonWheelDown:
+			if m.cursor < len(m.entries)-1 {
+				m.cursor++
+			}
 		}
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
