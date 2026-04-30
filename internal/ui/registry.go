@@ -119,6 +119,8 @@ func (m registryModel) View() string {
 		b.WriteString(styleDimmed.Render("No capabilities registered."))
 		b.WriteString("\n")
 		b.WriteString(styleHelp.Render("hint: check config/conductor.capabilities.yaml"))
+		b.WriteString("\n")
+		b.WriteString(styleHelp.Render("built-in capabilities: echo, filesystem, http, memory"))
 		return b.String()
 	}
 
@@ -191,7 +193,7 @@ func (m *registryModel) renderDetail() string {
 	var b strings.Builder
 
 	kv := func(k, v string) {
-		b.WriteString(styleKey.Render(k+": "))
+		b.WriteString(styleKey.Render(k + ": "))
 		b.WriteString(styleValue.Render(v))
 		b.WriteString("\n")
 	}
@@ -206,6 +208,18 @@ func (m *registryModel) renderDetail() string {
 	}
 	if len(e.Tags) > 0 {
 		kv("Tags", strings.Join(e.Tags, ", "))
+	}
+
+	// Display execution controls if present
+	if e.ExecutionControls != nil {
+		b.WriteString("\n")
+		b.WriteString(styleKey.Render("Execution Controls:") + "\n")
+		if e.ExecutionControls.TimeoutSeconds != nil {
+			b.WriteString(styleDetail.Render(fmt.Sprintf("  timeout: %.1fs", *e.ExecutionControls.TimeoutSeconds)) + "\n")
+		}
+		if e.ExecutionControls.MinIntervalSeconds != nil {
+			b.WriteString(styleDetail.Render(fmt.Sprintf("  min_interval: %.1fs", *e.ExecutionControls.MinIntervalSeconds)) + "\n")
+		}
 	}
 
 	return b.String()

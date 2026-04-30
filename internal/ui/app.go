@@ -112,7 +112,9 @@ func (a *App) Init() tea.Cmd {
 		a.loadLogLines(),
 	}
 	if a.cfg.Stats.CPU || a.cfg.Stats.Memory || a.cfg.Stats.Network {
-		cmds = append(cmds, func() tea.Msg { return sysInfoMsg{sysinfo.Collect(a.cfg.Stats.CPU, a.cfg.Stats.Memory, a.cfg.Stats.Network)} })
+		cmds = append(cmds, func() tea.Msg {
+			return sysInfoMsg{sysinfo.Collect(a.cfg.Stats.CPU, a.cfg.Stats.Memory, a.cfg.Stats.Network)}
+		})
 	}
 	return tea.Batch(cmds...)
 }
@@ -371,7 +373,7 @@ func (a *App) View() string {
 		return a.renderHelp()
 	}
 
-	header := renderHeader(a.width, a.cfg, a.sysStats)
+	header := renderHeader(a.width, a.cfg, a.sysStats, a.tasks.records)
 	tabBar := a.renderTabBar()
 
 	var panel string

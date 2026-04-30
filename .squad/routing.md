@@ -6,13 +6,14 @@ How to decide who handles what.
 
 | Work Type | Route To | Examples |
 |-----------|----------|----------|
-| {domain 1} | {Name} | {example tasks} |
-| {domain 2} | {Name} | {example tasks} |
-| {domain 3} | {Name} | {example tasks} |
-| Code review | {Name} | Review PRs, check quality, suggest improvements |
-| Testing | {Name} | Write tests, find edge cases, verify fixes |
-| Scope & priorities | {Name} | What to build next, trade-offs, decisions |
+| Architecture, roadmap fit, scope & priorities | Leela | Decide which Conductor roadmap items belong in the TUI, review UI architecture |
+| Go/Bubble Tea implementation | Fry | TUI views, commands, keyboard handling, config wiring |
+| Documentation | Amy | README, usage docs, examples, roadmap-derived docs |
+| Testing and quality | Zoidberg | Unit tests, edge cases, regression coverage, verification |
+| Code review | Leela | Review PRs, check quality, suggest improvements |
+| Testing | Zoidberg | Write tests, find edge cases, verify fixes |
 | Session logging | Scribe | Automatic — never needs routing |
+| Work monitoring | Ralph | Backlog/issue scanning and keep-alive loops |
 
 ## Issue Routing
 

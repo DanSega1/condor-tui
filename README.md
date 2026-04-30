@@ -1,20 +1,53 @@
 # condor-tui
 
-A standalone terminal UI for monitoring and operating a running
-[Conductor Engine](https://github.com/DanSega1/Conductor-Engine) instance.
+<div align="center">
 
-**Stack:** Go + [Bubble Tea](https://github.com/charmbracelet/bubbletea)
+```
+_________  _  _____  ____  ___ 
+ / ___/ __ \/ |/ / _ \/ __ \/ _ \
+/ /__/ /_/ /    / // / /_/ / , _/
+\___/\____/_/|_/____/\____/_/|_|
+```
+
+**A standalone terminal UI for monitoring and operating a running [Conductor Engine](https://github.com/DanSega1/Conductor-Engine) instance.**
+
+**Stack:** Go 1.24+ · Bubble Tea · YAML Config · gopsutil
+
+</div>
 
 ---
 
-## Features
+## Core Features
 
-| Tab | Description |
-|-----|-------------|
-| **[1] Tasks** | Live task queue and status board. Shows every `TaskRecord` from the task store, sorted by creation time. Select a task and press `enter` to expand a detail pane with full result, audit trail, and retry metadata. |
-| **[2] Workflows** | Workflow execution trace. Tasks are grouped by `workflow_id` and shown as ordered steps. Select a workflow and press `enter` for a step-by-step result view. |
-| **[3] Registry** | Capability registry browser. Lists built-in capabilities (`echo`, `filesystem`, `http`, `memory`) and any plugin capabilities declared in `conductor.capabilities.yaml`. |
-| **[4] Logs** | Log tail with live filtering. Streams new lines as they are appended. Press `/` to open a filter input; matching text is highlighted in-place. |
+| Tab | Status | Description |
+|-----|--------|-------------|
+| **[1] Tasks** | ✅ | Live task queue and status board. Shows compact task status counts in the header and every `TaskRecord` from the task store, sorted by creation time. Select a task and press `enter` to expand a detail pane with full result, audit trail, and retry metadata. |
+| **[2] Workflows** | ✅ | Workflow execution trace. Tasks are grouped by `workflow_id` and shown as ordered steps. Select a workflow and press `enter` for a step-by-step result view. |
+| **[3] Registry** | ✅ | Capability registry browser. Lists built-in capabilities (`echo`, `filesystem`, `http`, `memory`) and any plugin capabilities declared in `conductor.capabilities.yaml`. Select a capability and press `enter` to view execution controls (timeout, min_interval) if defined. |
+| **[4] Logs** | ✅ | Log tail with live filtering. Streams new lines as they are appended. Press `/` to open a filter input; matching text is highlighted in-place. |
+
+## Data Source Expectations
+
+condor-tui reads from **Conductor Engine's local storage** by default. Ensure your Conductor instance has:
+
+- **Task Store:** `.conductor/tasks.json` — JSON file of TaskRecord objects (created automatically by Conductor)
+- **Capability Registry:** `config/conductor.capabilities.yaml` — YAML file declaring available capabilities
+- **Log File:** (optional) A log file path for the Logs tab to tail
+
+All three default locations assume you run `condor-tui` from your Conductor project root. Override any path with CLI flags or config file.
+
+### Supported Conductor Task Statuses
+
+| Status | Meaning |
+|--------|---------|
+| `pending` | Waiting to run |
+| `running` | Currently executing |
+| `completed` | Finished successfully |
+| `failed` | Execution failed |
+| `awaiting_approval` | Blocked pending user approval |
+| `approved` | Approved and ready |
+| `policy_denied` | Denied by policy engine |
+| `cancelled` | User cancelled |
 
 ---
 
@@ -170,10 +203,10 @@ Press `:` to open the vim/k9s-style command palette at the bottom of the screen.
 The header area (inspired by k9s) shows:
 
 ```
-  Engine: local (http://localhost:8080)       __             __       _
-  Store:  .conductor/tasks.json            _______  ___  ___/ /__  ________/ /___
-  Version: 0.1.0                          / __/ _ \/ _ \/ _  / _ \/ __/___/ __/
-  CPU: 12%  MEM: 34%  NET: ↑2k ↓8k       \__/\___/_//_/\_,_/\___/_/      \__/
+  Engine: local (http://localhost:8080)    _________  _  _____  ____  ___ 
+  Store:  .conductor/tasks.json             / ___/ __ \/ |/ / _ \/ __ \/ _ \
+  Version: v0.2.0                          / /__/ /_/ /    / // / /_/ / , _/
+  CPU: 12%  MEM: 34%  NET: ↑2k ↓8k        \___/\____/_/|_/____/\____/_/|_|
 ```
 
 Stats panel is hidden by default — enable individual metrics in the config file.
@@ -190,45 +223,75 @@ Stats panel is hidden by default — enable individual metrics in the config fil
 
 ---
 
+## Planned Features (Roadmap)
+
+These features align with Conductor Engine's Phase 4+ capabilities and are **planned but not yet implemented**. They represent the intended TUI scope as the engine evolves.
+
+| Feature | Phase | Description |
+|---------|-------|-------------|
+| **Autonomous Operation Mode** | Phase 5 | Hands-off execution with human-in-the-loop checkpoints and rollback. |
+| **Audit & Recovery Panel** | Phase 5 | View historical executions, recovery decisions, and rollback paths. |
+| **Guild Knowledge Browser** | Phase 6 | Search and reference captured workflows, patterns, and domain knowledge. |
+| **Remote Deployment Control** | Phase 7 | Monitor remote deployments, health checks, and protected operation context. |
+| **Protected Operation Framework** | Phase 7 | Surface approval workflows, policy decisions, and audit compliance signals once the engine exposes them. |
+
+See [Conductor Engine Roadmap](https://github.com/DanSega1/Conductor-Engine/blob/main/docs/conductor/roadmap.md) for full context on engine evolution.
+
+---
+
 ## Development
 
+### Run Tests
+
 ```bash
-# Run tests
 go test ./...
+```
 
-# Build
+All tests are **unit tests**; no integration setup required.
+
+### Build
+
+```bash
 go build -o condor-tui .
+./condor-tui
+```
 
-# Lint (requires golangci-lint)
+### Lint
+
+```bash
 golangci-lint run
 ```
+
+(Requires [golangci-lint](https://golangci-lint.run/usage/install/) to be installed.)
 
 ### Project Layout
 
 ```
 condor-tui/
-├── main.go                  # CLI entry point, flag parsing, config load
+├── main.go                       # CLI entry point, flag parsing, config load
+├── go.mod                        # Go module definition (Go 1.24.13)
+├── go.sum
 ├── internal/
 │   ├── config/
-│   │   ├── config.go        # YAML config file loading + flag merge
+│   │   ├── config.go             # YAML config file loading + flag merge
 │   │   └── config_test.go
 │   ├── sysinfo/
-│   │   └── sysinfo.go       # CPU/MEM/NET stats via gopsutil/v3
+│   │   └── sysinfo.go            # CPU/MEM/NET stats via gopsutil/v3
 │   ├── client/
-│   │   ├── types.go         # Go types mirroring Conductor Engine data models
-│   │   ├── reader.go        # StoreReader, RegistryReader, LogTailer
+│   │   ├── types.go              # Go types mirroring Conductor Engine data models
+│   │   ├── reader.go             # StoreReader, RegistryReader, LogTailer
 │   │   └── reader_test.go
 │   └── ui/
-│       ├── app.go           # Root Bubble Tea model, tab routing, mouse, commands
-│       ├── header.go        # k9s-style ASCII logo + info panel
-│       ├── cmdpalette.go    # ':' command palette with tab-completion
-│       ├── tools.go         # External tool helpers (editor, diff, opener)
-│       ├── theme.go         # Theme struct + 5 built-in themes
-│       ├── styles.go        # Lipgloss style vars (theme-driven)
-│       ├── tasks.go         # Task queue & status board view
-│       ├── workflow.go      # Workflow execution trace view
-│       ├── registry.go      # Capability registry browser view
-│       ├── logs.go          # Log tail with filtering view
+│       ├── app.go                # Root Bubble Tea model, tab routing, mouse, commands
+│       ├── header.go             # k9s-style ASCII logo + info panel
+│       ├── cmdpalette.go         # ':' command palette with tab-completion
+│       ├── tools.go              # External tool helpers (editor, diff, opener)
+│       ├── theme.go              # Theme struct + 5 built-in themes
+│       ├── styles.go             # Lipgloss style vars (theme-driven)
+│       ├── tasks.go              # Task queue & status board view
+│       ├── workflow.go           # Workflow execution trace view
+│       ├── registry.go           # Capability registry browser view
+│       ├── logs.go               # Log tail with filtering view
 │       └── app_test.go
-└── go.mod
+└── README.md
 ```

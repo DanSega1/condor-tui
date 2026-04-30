@@ -6,20 +6,19 @@ import (
 
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 
 	"github.com/DanSega1/condor-tui/internal/client"
 )
 
 // tasksModel is the live task queue / status board view.
 type tasksModel struct {
-	records  []client.TaskRecord
-	cursor   int
-	width    int
-	height   int
-	detail   viewport.Model
+	records    []client.TaskRecord
+	cursor     int
+	width      int
+	height     int
+	detail     viewport.Model
 	showDetail bool
-	err      error
+	err        error
 }
 
 func newTasksModel(width, height int) tasksModel {
@@ -126,6 +125,8 @@ func (m tasksModel) View() string {
 		b.WriteString(styleDimmed.Render("No tasks found."))
 		b.WriteString("\n")
 		b.WriteString(styleHelp.Render("hint: run `cond run <task.yaml>` to create tasks"))
+		b.WriteString("\n")
+		b.WriteString(styleHelp.Render("or check if the store path is correct: --store <path>"))
 		return b.String()
 	}
 
@@ -220,7 +221,7 @@ func (m *tasksModel) renderDetail() string {
 	var b strings.Builder
 
 	kv := func(k, v string) {
-		b.WriteString(styleKey.Render(k+": "))
+		b.WriteString(styleKey.Render(k + ": "))
 		b.WriteString(styleValue.Render(v))
 		b.WriteString("\n")
 	}
@@ -229,7 +230,21 @@ func (m *tasksModel) renderDetail() string {
 	kv("Name", r.Name)
 	kv("Capability", r.Capability)
 	kv("Status", string(r.Status))
-	kv("Attempt", fmt.Sprintf("%d / %d", r.Attempt, r.MaxRetries+1))
+
+	// Highlight retry information prominently
+	retryInfo := fmt.Sprintf("%d / %d", r.Attempt, r.MaxRetries+1)
+	if r.Attempt > 1 {
+		retryInfo += styleError.Render(" (retried)")
+	}
+	kv("Attempt", retryInfo)
+
+	// Show retry eligibility for failed tasks
+	if r.Status == client.StatusFailed && r.Attempt <= r.MaxRetries {
+		b.WriteString(styleKey.Render("Retry Status: "))
+		b.WriteString(styleBadgeRunning.Render("eligible for retry"))
+		b.WriteString("\n")
+	}
+
 	if r.WorkflowID != nil {
 		kv("Workflow", *r.WorkflowID)
 	}
@@ -266,6 +281,13 @@ func (m *tasksModel) renderDetail() string {
 				line += fmt.Sprintf(" (%s → %s)", *e.FromStatus, *e.ToStatus)
 			}
 			b.WriteString(styleDetail.Render(line) + "\n")
+
+			// Show audit metadata if present
+			if len(e.Metadata) > 0 {
+				for k, v := range e.Metadata {
+					b.WriteString(styleDetail.Render(fmt.Sprintf("    %s: %v", k, v)) + "\n")
+				}
+			}
 		}
 	}
 
@@ -291,24 +313,4 @@ func padRight(s string, w int) string {
 		return s
 	}
 	return s + strings.Repeat(" ", n)
-}
-
-// renderStatusBar returns a one-line summary of task counts by status.
-func renderStatusBar(records []client.TaskRecord) string {
-	counts := map[string]int{}
-	for _, r := range records {
-		counts[string(r.Status)]++
-	}
-	parts := []string{}
-	order := []string{"running", "pending", "completed", "failed",
-		"awaiting_approval", "approved", "policy_denied", "cancelled"}
-	for _, s := range order {
-		if n := counts[s]; n > 0 {
-			parts = append(parts, fmt.Sprintf("%s %d", statusBadge(s), n))
-		}
-	}
-	if len(parts) == 0 {
-		return ""
-	}
-	return lipgloss.JoinHorizontal(lipgloss.Top, strings.Join(parts, "  "))
 }

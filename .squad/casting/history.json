@@ -1,0 +1,29 @@
+{
+  "history_version": "1.0",
+  "assignments": [
+    {
+      "assignment_id": "2026-04-30-condor-tui-futurama",
+      "created_at": "2026-04-30T14:14:21Z",
+      "universe": "Futurama",
+      "project": "condor-tui",
+      "members": [
+        {
+          "name": "Leela",
+          "role": "Lead / Architect"
+        },
+        {
+          "name": "Fry",
+          "role": "TUI Engineer"
+        },
+        {
+          "name": "Amy",
+          "role": "Technical Writer"
+        },
+        {
+          "name": "Zoidberg",
+          "role": "QA Engineer"
+        }
+      ]
+    }
+  ]
+}
