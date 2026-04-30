@@ -6,23 +6,24 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/DanSega1/condor-tui/internal/client"
 	"github.com/DanSega1/condor-tui/internal/config"
 	"github.com/DanSega1/condor-tui/internal/sysinfo"
 )
 
-// logoLines is the condor-tui ASCII art (figlet smslant font, embedded).
+// logoLines is the condor-tui ASCII art (figlet standard font, cleaner).
 var logoLines = []string{
-	`  __             __       _ `,
-	` _______  ___  ___/ /__  ________/ /___ __(_)`,
-	`/ __/ _ \/ _ \/ _  / _ \/ __/___/ __/ // / / `,
-	`\__/\___/_//_/\_,_/\___/_/      \__/\_,_/_/  `,
+	`_________  _  _____  ____  ___ `,
+	` / ___/ __ \/ |/ / _ \/ __ \/ _ \`,
+	`/ /__/ /_/ /    / // / /_/ / , _/`,
+	`\___/\____/_/|_/____/\____/_/|_|`,
 }
 
 const appVersion = "v0.2.0"
 
 // renderHeader produces the full-width info+logo banner that sits above the tab bar.
-func renderHeader(width int, cfg AppConfig, stats sysinfo.Stats) string {
-	// ── left info panel ──────────────────────────────────────────────────────
+func renderHeader(width int, cfg AppConfig, stats sysinfo.Stats, tasks []client.TaskRecord) string {
+	// Left info panel.
 	engineKind := resolveEngineKind(cfg)
 	engineLabel := engineKind
 	if cfg.Engine.URL != "" {
@@ -65,12 +66,17 @@ func renderHeader(width int, cfg AppConfig, stats sysinfo.Stats) string {
 		leftLines = append(leftLines, " "+strings.Join(parts, "  "))
 	}
 
+	// Task status summary (compact one-liner).
+	if taskSummary := renderStatusBar(tasks); taskSummary != "" {
+		leftLines = append(leftLines, " "+taskSummary)
+	}
+
 	// Pad left panel to match logo height.
 	for len(leftLines) < len(logoLines) {
 		leftLines = append(leftLines, "")
 	}
 
-	// ── right logo panel ─────────────────────────────────────────────────────
+	// Right logo panel.
 	logoWidth := 0
 	for _, l := range logoLines {
 		if w := lipgloss.Width(l); w > logoWidth {
@@ -80,7 +86,7 @@ func renderHeader(width int, cfg AppConfig, stats sysinfo.Stats) string {
 
 	logoStyle := lipgloss.NewStyle().Foreground(colorTeal).Bold(true)
 
-	// ── compose side by side ─────────────────────────────────────────────────
+	// Compose side by side.
 	leftWidth := width - logoWidth - 2
 	if leftWidth < 20 {
 		// Terminal too narrow — just render left info stacked.
@@ -167,9 +173,66 @@ func styleStat(val string) string {
 	return lipgloss.NewStyle().Foreground(colorSubtext).Render(val)
 }
 
+// renderStatusBar builds a compact task status summary line.
+func renderStatusBar(tasks []client.TaskRecord) string {
+	if len(tasks) == 0 {
+		return ""
+	}
+	counts := make(map[client.TaskStatus]int)
+	for _, t := range tasks {
+		counts[t.Status]++
+	}
+	var parts []string
+	order := []client.TaskStatus{
+		client.StatusRunning,
+		client.StatusPending,
+		client.StatusCompleted,
+		client.StatusFailed,
+		client.StatusAwaitingApproval,
+		client.StatusApproved,
+		client.StatusPolicyDenied,
+		client.StatusCancelled,
+	}
+	for _, s := range order {
+		if n := counts[s]; n > 0 {
+			badge := miniStatusBadge(s)
+			parts = append(parts, fmt.Sprintf("%s %d", badge, n))
+		}
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	label := lipgloss.NewStyle().Foreground(colorMuted).Render("Tasks:")
+	return label + " " + strings.Join(parts, " ")
+}
+
+// miniStatusBadge returns a concise coloured badge for the header.
+func miniStatusBadge(s client.TaskStatus) string {
+	switch s {
+	case client.StatusRunning:
+		return lipgloss.NewStyle().Foreground(colorBlue).Render("RUN")
+	case client.StatusPending:
+		return lipgloss.NewStyle().Foreground(colorYellow).Render("PND")
+	case client.StatusCompleted:
+		return lipgloss.NewStyle().Foreground(colorGreen).Render("OK")
+	case client.StatusFailed:
+		return lipgloss.NewStyle().Foreground(colorRed).Render("FAIL")
+	case client.StatusAwaitingApproval:
+		return lipgloss.NewStyle().Foreground(colorMauve).Render("WAIT")
+	case client.StatusApproved:
+		return lipgloss.NewStyle().Foreground(colorGreen).Render("APV")
+	case client.StatusPolicyDenied:
+		return lipgloss.NewStyle().Foreground(colorRed).Render("DENY")
+	case client.StatusCancelled:
+		return lipgloss.NewStyle().Foreground(colorSubtext).Render("CNCL")
+	default:
+		return string(s)
+	}
+}
+
 // RenderHeader is the exported form of renderHeader for use in tests.
 func RenderHeader(width int, cfg AppConfig, stats sysinfo.Stats) string {
-	return renderHeader(width, cfg, stats)
+	return renderHeader(width, cfg, stats, nil)
 }
 
 type sysInfoMsg struct {

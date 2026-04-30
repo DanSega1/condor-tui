@@ -102,23 +102,11 @@ func TestApp_RecordsLoadedMsg(t *testing.T) {
 	}
 
 	// Simulate the data-loading message flowing through the app.
-	result, _ := app.Update(recordsLoadedMsg(records))
+	result, _ := app.Update(ui.RecordsLoadedMsgForTest(records, nil))
 	view := result.(tea.Model).View()
 	if view == "" {
 		t.Error("View should be non-empty after receiving records")
 	}
-}
-
-// recordsLoadedMsg mirrors the internal type for white-box testing.
-// We re-export it from the package just for testing purposes via a helper.
-func recordsLoadedMsg(records []client.TaskRecord) tea.Msg {
-	// Use the exported AppConfig + New path since the internal type is unexported.
-	// We pass the message directly — since tea.Msg is interface{}, we must use
-	// the actual unexported type. We work around this by using the App's Update
-	// method (which accepts tea.Msg) and sending a WindowSizeMsg instead, then
-	// verifying the view renders correctly.
-	_ = records
-	return tea.WindowSizeMsg{Width: 120, Height: 30}
 }
 
 func TestApp_CapabilitiesLoadedMsg(t *testing.T) {

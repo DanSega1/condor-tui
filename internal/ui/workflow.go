@@ -14,7 +14,7 @@ import (
 type workflowModel struct {
 	records    []client.TaskRecord
 	workflows  []workflowGroup // ordered list of workflow groups
-	cursor     int            // index into workflows
+	cursor     int             // index into workflows
 	width      int
 	height     int
 	detail     viewport.Model
@@ -128,6 +128,8 @@ func (m workflowModel) View() string {
 		b.WriteString(styleDimmed.Render("No workflows found."))
 		b.WriteString("\n")
 		b.WriteString(styleHelp.Render("hint: run `cond workflow run <workflow.yaml>` to create workflows"))
+		b.WriteString("\n")
+		b.WriteString(styleHelp.Render("or standalone tasks will appear here with their task_id"))
 		return b.String()
 	}
 
@@ -225,7 +227,7 @@ func (m *workflowModel) renderDetail() string {
 
 		if t.Result != nil {
 			if t.Result.Error != nil {
-				b.WriteString(styleError.Render("  error: "+*t.Result.Error))
+				b.WriteString(styleError.Render("  error: " + *t.Result.Error))
 				b.WriteString("\n")
 			} else if t.Result.Output != nil {
 				b.WriteString(styleDetail.Render(fmt.Sprintf("  output: %v", t.Result.Output)))

@@ -138,15 +138,27 @@ func (r *RegistryReader) Read() ([]CapabilityEntry, error) {
 	}
 
 	if cfg.IncludeBuiltins {
-		entries = append(entries, BuiltinCapabilities...)
+		// Merge execution controls for builtins if present in YAML
+		for _, builtin := range BuiltinCapabilities {
+			entry := builtin
+			if ctrl, ok := cfg.ExecutionControls[builtin.Name]; ok {
+				entry.ExecutionControls = &ctrl
+			}
+			entries = append(entries, entry)
+		}
 	}
 
 	for _, p := range cfg.Capabilities {
-		entries = append(entries, CapabilityEntry{
-			Name:       importPathToName(p.ImportPath),
+		name := importPathToName(p.ImportPath)
+		entry := CapabilityEntry{
+			Name:       name,
 			ImportPath: p.ImportPath,
 			RiskLevel:  "unknown",
-		})
+		}
+		if ctrl, ok := cfg.ExecutionControls[name]; ok {
+			entry.ExecutionControls = &ctrl
+		}
+		entries = append(entries, entry)
 	}
 	return entries, nil
 }

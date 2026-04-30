@@ -29,11 +29,11 @@ type TaskResult struct {
 
 // AuditEntry mirrors engine.interfaces.task.AuditEntry.
 type AuditEntry struct {
-	Timestamp  time.Time  `json:"timestamp"`
-	Actor      string     `json:"actor"`
-	Action     string     `json:"action"`
-	FromStatus *string    `json:"from_status,omitempty"`
-	ToStatus   *string    `json:"to_status,omitempty"`
+	Timestamp  time.Time      `json:"timestamp"`
+	Actor      string         `json:"actor"`
+	Action     string         `json:"action"`
+	FromStatus *string        `json:"from_status,omitempty"`
+	ToStatus   *string        `json:"to_status,omitempty"`
 	Metadata   map[string]any `json:"metadata,omitempty"`
 }
 
@@ -57,18 +57,19 @@ type TaskRecord struct {
 
 // CapabilityEntry represents a single registered capability.
 type CapabilityEntry struct {
-	Name        string
-	Description string
-	RiskLevel   string
-	Tags        []string
-	ImportPath  string
+	Name              string
+	Description       string
+	RiskLevel         string
+	Tags              []string
+	ImportPath        string
+	ExecutionControls *ExecControls
 }
 
 // CapabilityConfig mirrors the conductor.capabilities.yaml structure.
 type CapabilityConfig struct {
-	IncludeBuiltins bool                       `yaml:"include_builtins"`
-	Capabilities    []CapabilityPluginEntry    `yaml:"capabilities"`
-	ExecutionControls map[string]ExecControls  `yaml:"execution_controls,omitempty"`
+	IncludeBuiltins   bool                    `yaml:"include_builtins"`
+	Capabilities      []CapabilityPluginEntry `yaml:"capabilities"`
+	ExecutionControls map[string]ExecControls `yaml:"execution_controls,omitempty"`
 }
 
 // CapabilityPluginEntry is one entry under `capabilities:` in the YAML.
